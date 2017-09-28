@@ -26,6 +26,8 @@
 
 #define CTRLKEY(c)   ((c)-'A'+1)
 
+static NSString *telnetPath;
+
 @implementation WLPTY {
     pid_t _pid;
     int _fd;
@@ -64,6 +66,7 @@
             port = @"22";
         fmt = @"/usr/bin/ssh -o PubkeyAuthentication=no -o Protocol=2,1 -p %2$@ -x %1$@";
     } else {
+        
         if (port == nil)
             port = @"23";
         range = [addr rangeOfString:@"@"];
@@ -71,7 +74,8 @@
         if (range.length > 0)
             addr = [addr substringFromIndex:range.location + range.length];
         // "-" before the port number forces the initial option negotiation
-        fmt = @"/usr/bin/telnet -8 %@ -%@";
+        
+        fmt = [NSString stringWithFormat:@"%@ -8 %%@ %%@", telnetPath];
     }
     NSString *r = [NSString stringWithFormat:fmt, addr, port];
     return r;
@@ -102,7 +106,24 @@
     }
 }
 
++ (NSString*)telnetPath{
+    
+    if([[NSFileManager defaultManager] fileExistsAtPath:@"/usr/bin/telnet"]){
+        telnetPath = @"/usr/bin/telnet";
+        return @"/usr/bin/telnet";
+    }
+    
+    if([[NSFileManager defaultManager] fileExistsAtPath:@"/usr/local/bin/telnet"]){
+        telnetPath = @"/usr/local/bin/telnet";
+        return @"/usr/local/bin/telnet";
+    }
+    
+    telnetPath = @"/usr/bin/telnet";
+    return @"/usr/bin/telnet";
+}
+
 - (BOOL)connect:(NSString *)addr {
+    
     char slaveName[PATH_MAX];
     struct termios term;
     struct winsize size;
@@ -137,6 +158,8 @@
     size.ws_row = [WLGlobalConfig sharedInstance].row;
     size.ws_xpixel = 0;
     size.ws_ypixel = 0;
+    
+    [WLPTY telnetPath];
 
     _pid = forkpty(&_fd, slaveName, &term, &size);
     if (_pid == 0) { /* child */

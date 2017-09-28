@@ -74,7 +74,8 @@ SYNTHESIZE_SINGLETON_FOR_CLASS(WLQuickLookBridge)
 		} else {
 			[_panel setDataSource:self];
 			QLPreviewView *view = [controller previewView];
-			[view setEnableDragNDrop:YES];
+			if([view respondsToSelector:@selector(setEnableDragNDrop:)])
+                [view setEnableDragNDrop:YES];
 			//[view setAutomaticallyMakePreviewFirstResponder:YES];
 			[view setDelegate:self];
 		}
